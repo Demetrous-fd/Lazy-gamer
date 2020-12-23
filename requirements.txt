@@ -1,0 +1,7 @@
+selenium
+msedge-selenium-tools
+requests
+fake-useragent
+PyQt5
+pyqt5-tools
+PySide2
