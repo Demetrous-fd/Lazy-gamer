@@ -1,7 +1,5 @@
-selenium
-msedge-selenium-tools
-requests
-fake-useragent
-PyQt5
-pyqt5-tools
-PySide2
+requests==2.25.0
+fake_useragent==0.1.11
+PyQt5==5.15.2
+selenium==3.141.0
+msedge-selenium-tools==3.141.3
