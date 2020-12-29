@@ -1,11 +1,10 @@
 #!/urs/bin/python3
 # -*- coding: utf-8 -*-
-
-from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PyQt5.QtCore import pyqtSlot, QUrl
-
+from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 from PyQt5 import uic
 import settings
 import sys
@@ -14,6 +13,27 @@ import sys
 
 URL1 = "https://cdn1.epicgames.com/d5241c76f178492ea1540fce45616757/offer/EGS_HolidaySale2020_DoG_AlienIsolation_1920x1080_Teaser-R-1920x1080-2d7e1be9cc7c6583832158bc4214c981.jpg"
 URL2 = "https://cdn1.epicgames.com/d5241c76f178492ea1540fce45616757/offer/EGS_HolidaySale2020_DoG_21_1920x1080_Teaser-1920x1080-dae036b682dfe04fc8dcde8ffb3fa0c3.jpg"
+
+
+class taskThread(QtCore.QObject):
+    running = False
+    threadSignal = QtCore.pyqtSignal(int)
+    threadFinish = QtCore.pyqtSignal()
+
+    # метод, который будет выполнять алгоритм в другом потоке
+    def save_settings(self):
+        radiobuttons = [self.ui_s.btn_edge, self.ui_s.btn_chrome, self.ui_s.btn_yandex, self.ui_s.btn_firefox]
+        for btn in radiobuttons:
+            if btn.isChecked():
+                browser = btn.text().lower().split(" ")[-1]
+                settings.update_setting("settings", "browser", "edge")
+                break
+        print(self.ui_s.startup.isChecked())
+        if self.ui_s.startup.isChecked():
+            settings.update_setting("settings", "startup", "True")
+        else:
+            settings.update_setting("settings", "startup", "False")
+
 
 
 class MainWindow(QtWidgets.QWidget):
@@ -56,19 +76,18 @@ class MainWindow(QtWidgets.QWidget):
         radiobuttons = [self.ui_s.btn_edge, self.ui_s.btn_chrome, self.ui_s.btn_yandex, self.ui_s.btn_firefox]
         for btn in radiobuttons:
             if btn.isChecked():
-                # browser = btn.text().lower().split(" ")[-1]
+                browser = btn.text().lower().split(" ")[-1]
                 settings.update_setting("settings", "browser", "edge")
                 break
-        # print(self.ui_s.startup.isChecked())
-        # if self.ui_s.startup.isChecked():
-        #     settings.update_setting("settings", "startup", "True")
-        # else:
-        #     settings.update_setting("settings", "startup", "False")
+        print(self.ui_s.startup.isChecked())
+        if self.ui_s.startup.isChecked():
+            settings.update_setting("settings", "startup", "True")
+        else:
+            settings.update_setting("settings", "startup", "False")
 
 
     def close_settings(self):
         # self.save_settings()
-        update_setting("settings", "browser", "edge")
         self.ui_s.close()
 
     def get_settings(self):
