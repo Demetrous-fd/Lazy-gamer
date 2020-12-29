@@ -71,7 +71,7 @@ def main():
 
 if __name__ == "__main__":
     driver = Browser("chrome")  # chrome or edge
-    driver.launch_browser(headless=True, remote=True)
-    sleep(150)
-    driver.quit()
-    # main()
+    #driver.launch_browser(headless=True, remote=True)
+    #sleep(150)
+    #driver.quit()
+    main()
