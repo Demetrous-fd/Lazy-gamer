@@ -1,12 +1,13 @@
 #!/urs/bin/python3
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import json
 import datetime
 from time import sleep
+from scrapy import get_info
 from browsers import Browser
 from os.path import exists, getsize
-from scrapy import get_info, get_users
+from settings import get_setting, update_setting
 
 
 def check_games(games):
@@ -18,13 +19,8 @@ def check_games(games):
     for game in games:
         if game["game"] in temp:
             pass
-            # print("-" * 50)
-            # print(f"{game['game']} имеется в библиотеке")
         else:
             result.append(game)
-
-    # if len(temp) == len(result):
-    #     print("-" * 50)
     return result
 
 
@@ -52,6 +48,7 @@ def get_game(games):
         for game in games:
             if game["game"] != "Mystery Game":
                 driver.get_free_game(game["game"], game["link"])
+                print("-" * 50)
     except Exception as ex:
         driver.get_screenshot("Crash" + datetime.datetime.today().strftime("%m-%d_%H-%M-%S"))
         print(ex)
@@ -62,15 +59,19 @@ def get_game(games):
 
 def main():
     get_info()
-    if exists("data/cookies.pkl"):
+    if get_setting("Settings", "auth") == "True":
         send_to_check()
     else:
         print("Пройдите авторизацию перед получением игры")
         sleep(3)
         driver.login()
+        update_setting("Settings", "auth", "True")
         main()
 
 
 if __name__ == "__main__":
-    driver = Browser("yandex")
-    main()
+    driver = Browser("chrome")  # chrome or edge
+    driver.launch_browser(headless=True, remote=True)
+    sleep(150)
+    driver.quit()
+    # main()

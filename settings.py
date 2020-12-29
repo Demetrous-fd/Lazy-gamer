@@ -1,13 +1,16 @@
 import configparser
-from os.path import exists
+from os.path import exists, abspath
 
-PATH = "data\settings.ini"
+PATH = r"data\settings.ini"
+
 
 def create_config():
     config = configparser.ConfigParser()
     config.add_section("Settings")
     config.set("Settings", "browser", "edge")
     config.set("Settings", "startup", "False")
+    config.set("Settings", "path", "\\".join(abspath(__file__).split("\\")[0:-1]))
+    config.set("Settings", "auth", "False")
 
     with open(PATH, "w") as config_file:
         config.write(config_file)
@@ -36,5 +39,4 @@ def update_setting(section, setting, value):
 
 
 if __name__ == "__main__":
-    browser = get_setting('Settings', 'browser')
-    startup = get_setting('Settings', 'startup')
+    create_config()
