@@ -6,11 +6,11 @@ from config import AUTH_URL
 from selenium import webdriver
 from scrapy import get_remote_link
 from os.path import exists, getsize
-from settings import update_setting
 from fake_useragent import UserAgent
 from msedge.selenium_tools import Edge
 from selenium.webdriver.common.by import By
 from msedge.selenium_tools import EdgeOptions
+from settings import update_setting, get_setting
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support import expected_conditions as EC
@@ -60,7 +60,6 @@ def select_browser(name, headless=False, remote=False):
     elif name == "edge":
         options = EdgeOptions()
         options.use_chromium = True
-        options.add_argument("--enable-profile-shortcut-manager")
         options.add_argument("--allow-profiles-outside-user-dir")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("start-maximized")
@@ -74,7 +73,6 @@ def select_browser(name, headless=False, remote=False):
 
         if headless:
             options.add_argument("headless")
-            options.add_argument("disable-gpu")
             return Edge(EdgeChromiumDriverManager().install(), options=options)
         else:
             return Edge(EdgeChromiumDriverManager().install(), options=options)
@@ -82,7 +80,7 @@ def select_browser(name, headless=False, remote=False):
 
 class Browser:
 
-    def __init__(self, name_browser):
+    def __init__(self, name_browser=get_setting("Settings", "browser")):
         self.__browser = name_browser
 
     def launch_browser(self, url="https://www.epicgames.com", headless=False, remote=False):
@@ -172,11 +170,12 @@ class Browser:
         if button_text == "купить сейчас":
             print("Игра платная")
         elif button_text == "в коллекции":
-            if button_text == "в коллекции":
-                write_game(game)
-                print(f"{game} имеется в библиотеке")
-        else:
+            write_game(game)
+            print(f"{game} имеется в библиотеке")
+        elif button_text == "получить":
             self.__add_game(game)
+        else:
+            pass
 
     def get_free_game(self, game, url):
         self.__driver.get(url)

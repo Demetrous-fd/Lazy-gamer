@@ -1,16 +1,17 @@
 import configparser
 from os.path import exists, abspath
 
-PATH = r"data\settings.ini"
+PATH = "\\".join(abspath(__file__).split("\\")[0:-1]) + "\\data\\settings.ini"
 
 
 def create_config():
     config = configparser.ConfigParser()
     config.add_section("Settings")
-    config.set("Settings", "browser", "edge")
+    config.set("Settings", "browser", "chrome")
     config.set("Settings", "startup", "False")
     config.set("Settings", "path", "\\".join(abspath(__file__).split("\\")[0:-1]))
     config.set("Settings", "auth", "False")
+    print(PATH)
 
     with open(PATH, "w") as config_file:
         config.write(config_file)
