@@ -146,15 +146,34 @@ class Browser:
             else:
                 return False
 
-    def __add_game(self, game):
-        try:
-            WebDriverWait(self.__driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH,
-                                            """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button"""))
-            )
-        finally:
-            self.__driver.find_element_by_xpath(
-                """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button""").click()
+    def __add_game(self, game, offers=False):
+        if not offers:
+            try:
+                WebDriverWait(self.__driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH,
+                                                """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button"""))
+                )
+            except TimeoutException:
+                pass
+            finally:
+                try:
+                    self.__driver.find_element_by_xpath(
+                        """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button""").click()
+                except NoSuchElementException:
+                    self.__driver.find_element_by_xpath(
+                        """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[2]/div/div/button""").click()
+        else:
+            try:
+                WebDriverWait(self.__driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH,
+                                                """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button"""))
+                )
+            finally:
+                try:
+                    self.__driver.find_element_by_xpath(
+                        """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button""").click()
+                finally:
+                    pass
         try:
             WebDriverWait(self.__driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH,
@@ -166,14 +185,19 @@ class Browser:
         write_game(game)
         print(f"{game} добавлена в коллекцию")
 
-    def __choices(self, game, button_text):
+    def __choices(self, game, button_text, offers=False):
         if button_text == "купить сейчас":
             print("Игра платная")
         elif button_text == "в коллекции":
             write_game(game)
             print(f"{game} имеется в библиотеке")
         elif button_text == "получить":
-            self.__add_game(game)
+            if not offers:
+                self.__add_game(game)
+            else:
+                self.__add_game(game, offers=True)
+        elif button_text == "скоро появится":
+            print("Скоро появится")
         else:
             pass
 
@@ -200,22 +224,29 @@ class Browser:
             except NoSuchElementException:
                 print("Not 18+")
         try:
-            if self.__driver.find_element_by_xpath(
-                    "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"):  # Дополнительные предложения
-                button_text = self.__driver.find_element_by_xpath(
-                    "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button").text.lower()
-                self.__choices(game, button_text)
-
-        except NoSuchElementException:  # Нет дополнительных предложений
+            WebDriverWait(self.__driver, 30).until(
+                EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"))
+            )
+        except TimeoutException:
+            pass
+        finally:
             try:
-                WebDriverWait(self.__driver, 30).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-1tv9h97"))
-                )
-            except TimeoutException:
-                pass
-            finally:
-                button_text = self.__driver.find_element_by_css_selector("div.css-1tv9h97").text.lower()
-                self.__choices(game, button_text)
+                if self.__driver.find_element_by_xpath(
+                        "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"):  # Дополнительные предложения
+                    button_text = self.__driver.find_element_by_xpath(
+                        "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button").text.lower()
+                    self.__choices(game, button_text, offers=True)
+
+            except NoSuchElementException:  # Нет дополнительных предложений
+                try:
+                    WebDriverWait(self.__driver, 30).until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-1tv9h97"))
+                    )
+                except TimeoutException:
+                    pass
+                finally:
+                    button_text = self.__driver.find_element_by_css_selector("div.css-1tv9h97").text.lower()
+                    self.__choices(game, button_text)
 
     def get_screenshot(self, name):
         if name.split(".")[-1] != "png" or "." not in name:
