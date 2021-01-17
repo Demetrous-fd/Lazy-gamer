@@ -1,8 +1,9 @@
+import re
 import json
 import webbrowser
-from os import getenv
 from time import sleep
 from config import AUTH_URL
+from os import getenv, popen
 from selenium import webdriver
 from scrapy import get_remote_link
 from os.path import exists, getsize
@@ -37,13 +38,31 @@ def select_browser(name, headless=False, remote=False):
         chromeoptions = webdriver.ChromeOptions()
         chromeoptions.add_argument("--window-size=1920,1080")
         chromeoptions.add_argument("start-maximized")
+
+        # Включение кастомного пути папки с профилем
         chromeoptions.add_argument("--enable-profile-shortcut-manager")
         chromeoptions.add_argument("--allow-profiles-outside-user-dir")
         chromeoptions.add_argument(
             "user-data-dir=" + "\\".join(
                 getenv("appdata").split("\\")[0:-1]) + r"\Local\Google\Chrome\User Data\Profile 2")
         chromeoptions.add_argument("--profile-directory=Default")
+
+        # Установка реального useragent-а
         chromeoptions.add_argument(f"user-agent={useragent.chrome}")
+
+        # Отключение детекта webdriver-а
+        pattern = r'\d+\.\d+\.\d+\.\d+'
+        chrome_version = r'reg query "HKEY_CURRENT_USER\Software\Google\Chrome\BLBeacon" /v version'
+
+        stdout = popen(chrome_version).read()
+        version = re.search(pattern, stdout).group(0).split(".")
+
+        if int(version[0]) <= 79:
+            if int(version[2]) <= 3945 and int(version[3]) <= 16:
+                chromeoptions.add_experimental_option("excludeSwitches", ["enable-automation"])
+                chromeoptions.add_experimental_option("useAutomationExtension", False)
+        else:
+            chromeoptions.add_argument("--disable-blink-features=AutomationControlled")
 
         if remote:
             chromeoptions.add_argument("--remote-debugging-port=9222")
@@ -60,13 +79,21 @@ def select_browser(name, headless=False, remote=False):
     elif name == "edge":
         options = EdgeOptions()
         options.use_chromium = True
-        options.add_argument("--allow-profiles-outside-user-dir")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("start-maximized")
+
+        # Включение кастомного пути папки с профилем
+        options.add_argument("--enable-profile-shortcut-manager")
+        options.add_argument("--allow-profiles-outside-user-dir")
         options.add_argument("user-data-dir=" + "\\".join(
             getenv("appdata").split("\\")[0:-1]) + r"\Local\Microsoft\Edge\User Data\Profile 2")
         options.add_argument("--profile-directory=Default")
+
+        # Установка реального useragent-а
         options.add_argument(f"user-agent={useragent.edge}")
+
+        # Отключение детекта webdriver-а
+        options.add_argument("--disable-blink-features=AutomationControlled")
 
         if remote:
             options.add_argument("--remote-debugging-port=9222")
