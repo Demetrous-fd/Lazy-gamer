@@ -21,7 +21,8 @@ def get_info():
             temp_list.append({
                 "game": item["title"],
                 "link": "https://www.epicgames.com/store/ru/product/" + item["productSlug"],
-                "images": item["keyImages"]
+                "images": item["keyImages"],
+                "promo": item["promotions"]
             })
 
         with open("data/last_game.json", "w") as file:

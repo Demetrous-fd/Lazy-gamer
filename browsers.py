@@ -4,19 +4,19 @@ import webbrowser
 from time import sleep
 from config import AUTH_URL
 from os import getenv, popen
-from selenium import webdriver
 from scrapy import get_remote_link
 from os.path import exists, getsize
 from fake_useragent import UserAgent
-from msedge.selenium_tools import Edge
-from selenium.webdriver.common.by import By
-from msedge.selenium_tools import EdgeOptions
+from custom.selenium_mod import webdriver
 from settings import update_setting, get_setting
-from selenium.webdriver.support.ui import WebDriverWait
+from custom.msedge_mod.selenium_tools import Edge
+from custom.selenium_mod.webdriver.common.by import By
+from custom.msedge_mod.selenium_tools import EdgeOptions
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from custom.selenium_mod.webdriver.support.ui import WebDriverWait
+from custom.selenium_mod.webdriver.support import expected_conditions as EC
+from custom.selenium_mod.common.exceptions import TimeoutException, NoSuchElementException
 
 
 def write_game(game):
@@ -36,6 +36,8 @@ def select_browser(name, headless=False, remote=False):
     useragent = UserAgent()
     if name == "chrome":
         chromeoptions = webdriver.ChromeOptions()
+        chromeoptions.add_experimental_option('excludeSwitches', ['enable-logging'])
+
         chromeoptions.add_argument("--window-size=1920,1080")
         chromeoptions.add_argument("start-maximized")
 
@@ -238,10 +240,10 @@ class Browser:
             self.get_free_game(game, url)
 
         try:
-            WebDriverWait(self.__driver, 15).until(
+            WebDriverWait(self.__driver, 20).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-a8mpwg-WarningLayout__contentWrapper"))
             )
-        except TimeoutException:
+        except TimeoutException or NoSuchElementException:
             pass
         finally:
             try:
@@ -252,7 +254,8 @@ class Browser:
                 print("Not 18+")
         try:
             WebDriverWait(self.__driver, 30).until(
-                EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"))
+                EC.element_to_be_clickable((By.XPATH,
+                                            "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"))
             )
         except TimeoutException:
             pass

@@ -1,7 +1,7 @@
 import configparser
 from os.path import exists, abspath
 
-PATH = "\\".join(abspath(__file__).split("\\")[0:-1]) + "\\data\\settings.ini"
+PATH = "\\".join(abspath(__file__).split("\\")[0:-1]) + "\\settings.ini"
 
 
 def create_config():
