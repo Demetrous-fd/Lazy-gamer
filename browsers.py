@@ -18,17 +18,19 @@ from custom.selenium_mod.webdriver.support.ui import WebDriverWait
 from custom.selenium_mod.webdriver.support import expected_conditions as EC
 from custom.selenium_mod.common.exceptions import TimeoutException, NoSuchElementException
 
+PATH = get_setting("Settings", "path")
+
 
 def write_game(game):
     games = [{"game": game}]
     if exists(r"data\left game.json") and getsize(r"data\left game.json") > 0:
-        with open(r"data\left game.json") as file:
+        with open(PATH + r"\data\left game.json") as file:
             temp = json.load(file)
 
         for game in temp:
             games.append({"game": game["game"]})
 
-    with open(r"data\left game.json", "w") as file:
+    with open(PATH + r"\data\left game.json", "w") as file:
         json.dump(games, file, indent=4)
 
 
@@ -47,7 +49,9 @@ def select_browser(name, headless=False, remote=False):
         chromeoptions.add_argument(
             "user-data-dir=" + "\\".join(
                 getenv("appdata").split("\\")[0:-1]) + r"\Local\Google\Chrome\User Data\Profile 2")
-        chromeoptions.add_argument("--profile-directory=Default")
+        chromeoptions.add_argument('--profile-directory="Default"')
+        chromeoptions.add_argument("--enable-aggressive-domstorage-flushing")
+        chromeoptions.add_argument("--profiling-flush=10")
 
         # Установка реального useragent-а
         chromeoptions.add_argument(f"user-agent={useragent.chrome}")
@@ -90,6 +94,8 @@ def select_browser(name, headless=False, remote=False):
         options.add_argument("user-data-dir=" + "\\".join(
             getenv("appdata").split("\\")[0:-1]) + r"\Local\Microsoft\Edge\User Data\Profile 2")
         options.add_argument("--profile-directory=Default")
+        options.add_argument("--enable-aggressive-domstorage-flushing")
+        options.add_argument("--profiling-flush=10")
 
         # Установка реального useragent-а
         options.add_argument(f"user-agent={useragent.edge}")
@@ -124,10 +130,15 @@ class Browser:
         :type remote: bool
         """
 
+        print("-" * 50)
         print("Launch browser")
+        print("-" * 50)
         if headless and remote:
             self.__driver = select_browser(self.__browser, True, True)
-            print("Remote panel: " + get_remote_link(self.__browser))
+            print("\n\n" + "-" * 50)
+            print("Link: " + get_remote_link(self.__browser))
+            print("-" * 50)
+            print("\n\n")
         elif headless:
             self.__driver = select_browser(self.__browser, True)
         else:
@@ -148,7 +159,7 @@ class Browser:
                 break
             except Exception:
                 continue
-        sleep(3)
+        sleep(15)
         self.quit()
         update_setting("Settings", "auth", "True")
         print("Авторизация прошла успешно!")
