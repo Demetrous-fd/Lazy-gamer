@@ -2,12 +2,12 @@ import re
 import json
 import webbrowser
 from time import sleep
-from config import AUTH_URL
 from os import getenv, popen
-from scrapy import get_remote_link
+from config import AUTH_URL, EGS
 from os.path import exists, getsize
 from fake_useragent import UserAgent
 from custom.selenium_mod import webdriver
+from scrapy import get_remote_link, path
 from settings import update_setting, get_setting
 from custom.msedge_mod.selenium_tools import Edge
 from custom.selenium_mod.webdriver.common.by import By
@@ -18,7 +18,7 @@ from custom.selenium_mod.webdriver.support.ui import WebDriverWait
 from custom.selenium_mod.webdriver.support import expected_conditions as EC
 from custom.selenium_mod.common.exceptions import TimeoutException, NoSuchElementException
 
-PATH = get_setting("Settings", "path")
+PATH = path()
 
 
 def write_game(game):
@@ -36,6 +36,32 @@ def write_game(game):
 
 def select_browser(name, headless=False, remote=False):
     useragent = UserAgent()
+    chrome_driver = None
+    edge_driver = None
+    browser = get_setting("Settings", "browser")
+    if get_setting("WebDriver", "driver_manager") == "True":
+        if browser == "chrome":
+            chrome_driver = ChromeDriverManager().install()
+        else:
+            edge_driver = EdgeChromiumDriverManager().install()
+
+    else:
+        if browser == "chrome":
+            if get_setting("WebDriver", "chrome_driver_path") != "NULL":
+                chrome_path = get_setting("WebDriver", "chrome_driver_path")
+                if exists(chrome_path):
+                    chrome_driver = chrome_path
+            else:
+                chrome_driver = ChromeDriverManager().install()
+
+        else:
+            if get_setting("WebDriver", "msedge_driver_path") != "NULL":
+                edge_path = get_setting("WebDriver", "msedge_driver_path")
+                if exists(edge_path):
+                    edge_driver = edge_path
+            else:
+                edge_driver = EdgeChromiumDriverManager().install()
+
     if name == "chrome":
         chromeoptions = webdriver.ChromeOptions()
         chromeoptions.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -46,9 +72,12 @@ def select_browser(name, headless=False, remote=False):
         # Включение кастомного пути папки с профилем
         chromeoptions.add_argument("--enable-profile-shortcut-manager")
         chromeoptions.add_argument("--allow-profiles-outside-user-dir")
+        # chromeoptions.add_argument(
+        #     "user-data-dir=" + "\\".join(
+        #         getenv("appdata").split("\\")[0:-1]) + r"\Local\Google\Chrome\User Data\Profile 2")
+        data_path = path() + '\\data\\Users\\chrome\\Profile 1'
         chromeoptions.add_argument(
-            "user-data-dir=" + "\\".join(
-                getenv("appdata").split("\\")[0:-1]) + r"\Local\Google\Chrome\User Data\Profile 2")
+            f"user-data-dir={data_path}")
         chromeoptions.add_argument('--profile-directory="Default"')
         chromeoptions.add_argument("--enable-aggressive-domstorage-flushing")
         chromeoptions.add_argument("--profiling-flush=10")
@@ -76,10 +105,10 @@ def select_browser(name, headless=False, remote=False):
         if headless:
             chromeoptions.add_argument("headless")
             chromeoptions.add_argument("--disable-gpu")
-            return webdriver.Chrome(ChromeDriverManager().install(),
+            return webdriver.Chrome(chrome_driver,
                                     chrome_options=chromeoptions)
         else:
-            return webdriver.Chrome(ChromeDriverManager().install(),
+            return webdriver.Chrome(chrome_driver,
                                     chrome_options=chromeoptions)
 
     elif name == "edge":
@@ -91,8 +120,11 @@ def select_browser(name, headless=False, remote=False):
         # Включение кастомного пути папки с профилем
         options.add_argument("--enable-profile-shortcut-manager")
         options.add_argument("--allow-profiles-outside-user-dir")
-        options.add_argument("user-data-dir=" + "\\".join(
-            getenv("appdata").split("\\")[0:-1]) + r"\Local\Microsoft\Edge\User Data\Profile 2")
+        # options.add_argument("user-data-dir=" + "\\".join(
+        #     getenv("appdata").split("\\")[0:-1]) + r"\Local\Microsoft\Edge\User Data\Profile 2")
+        data_path = path() + '\\data\\Users\\edge\\Profile 1'
+        options.add_argument(
+            f"user-data-dir={data_path}")
         options.add_argument("--profile-directory=Default")
         options.add_argument("--enable-aggressive-domstorage-flushing")
         options.add_argument("--profiling-flush=10")
@@ -108,15 +140,15 @@ def select_browser(name, headless=False, remote=False):
 
         if headless:
             options.add_argument("headless")
-            return Edge(EdgeChromiumDriverManager().install(), options=options)
+            return Edge(edge_driver, options=options)
         else:
-            return Edge(EdgeChromiumDriverManager().install(), options=options)
+            return Edge(edge_driver, options=options)
 
 
 class Browser:
 
     def __init__(self, name_browser=get_setting("Settings", "browser")):
-        self.__browser = name_browser
+        self.__browser = name_browser  # Chrome or MS Edge
 
     def launch_browser(self, url="https://www.epicgames.com", headless=False, remote=False):
         """
@@ -166,10 +198,12 @@ class Browser:
         print("-" * 50)
 
     def check_login(self):
+        self.__driver.get(EGS)
+        self.__driver.implicitly_wait(15)
         if self.__driver.current_url == "https://www.epicgames.com/id/logout?lang=ru&redirectUrl=https%3A%2F%2Fwww.epicgames.com" \
                 or self.__driver.current_url == "https://www.epicgames.com/id/login?lang=ru&noHostRedirect=true&redirectUrl=https%3A%2F%2Fwww.epicgames.com%2Fstore%2F&client_id=875a3b57d3a640a6b7f9b4e883463ab4":
             update_setting("Settings", "auth", "False")
-            return True
+            return False
         try:
             WebDriverWait(self.__driver, 60).until(
                 EC.element_to_be_clickable((By.XPATH, """//*[@id="user"]"""))
@@ -178,13 +212,11 @@ class Browser:
             sleep(5)
             if self.__driver.find_element_by_xpath("""//*[@id="user"]/ul/li/a/span""").text.lower() == "вход":
                 self.__driver.quit()
-                print("Слетела авторизация\nАвторизуйтесь заново")
-                print("-" * 50)
                 update_setting("Settings", "auth", "False")
                 sleep(3)
-                return True
-            else:
                 return False
+            else:
+                return True
 
     def __add_game(self, game, offers=False):
         if not offers:
@@ -245,10 +277,6 @@ class Browser:
         self.__driver.get(url)
         self.__driver.implicitly_wait(10)
         print(self.__driver.current_url)
-        if self.check_login():
-            self.login()
-            self.launch_browser(url, True)
-            self.get_free_game(game, url)
 
         try:
             WebDriverWait(self.__driver, 20).until(
@@ -293,6 +321,9 @@ class Browser:
         if name.split(".")[-1] != "png" or "." not in name:
             name = name.split(".")[0] + ".png"
         self.__driver.get_screenshot_as_file(name)
+
+    def update_browser(self):
+        self.__browser = get_setting("Settings", "browser")
 
     def quit(self):
         self.__driver.quit()

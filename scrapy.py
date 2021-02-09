@@ -1,27 +1,33 @@
+import os
 import sys
 import json
 import ctypes
 import winreg
 import requests
-from os import getenv
 from time import sleep
 from config import PROMO_URL
-from settings import get_setting
 from fake_useragent import UserAgent
+from os.path import abspath, dirname
+from inspect import getframeinfo, currentframe
 
 URL = PROMO_URL
 
 useragent = {'User-Agent': UserAgent().random}
 temp_list = []
-PATH = get_setting("Settings", "path")
+
+
+def path():
+    if is_frozen():
+        return os.path.dirname(sys.executable)
+    else:
+        filename = getframeinfo(currentframe()).filename
+        return dirname(abspath(filename))
 
 
 def get_info():
     response = requests.get(URL, headers=useragent)
     if response.status_code == 200:
         data = json.loads(response.text)
-        # with open("data\temp.json", "w") as file:
-        #     json.dump(data, file, indent=4)
 
         for item in data["data"]["Catalog"]["searchStore"]["elements"]:
             temp_list.append({
@@ -31,7 +37,7 @@ def get_info():
                 "promo": item["promotions"]
             })
 
-        with open(PATH + r"\data\last_game.json", "w") as file:
+        with open(path() + r"\data\last_game.json", "w") as file:
             json.dump(temp_list, file, indent=4)
     else:
         print("EGS недоступен")
@@ -75,9 +81,18 @@ def is_console():
 
 
 def get_path_pythonw():
-    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Python\PythonCore\3.8\InstallPath", 0,
-                                winreg.KEY_READ) as key:
-        return winreg.QueryValueEx(key, "WindowedExecutablePath")[0]
+    if sys.version_info.minor == 8:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Python\PythonCore\3.8\InstallPath", 0,
+                            winreg.KEY_READ) as key:
+            return winreg.QueryValueEx(key, "WindowedExecutablePath")[0]
+    elif sys.version_info.minor == 9:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Python\PythonCore\3.9\InstallPath", 0,
+                            winreg.KEY_READ) as key:
+            return winreg.QueryValueEx(key, "WindowedExecutablePath")[0]
+    elif sys.version_info.minor == 7:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Python\PythonCore\3.7\InstallPath", 0,
+                            winreg.KEY_READ) as key:
+            return winreg.QueryValueEx(key, "WindowedExecutablePath")[0]
 
 
 if __name__ == '__main__':
