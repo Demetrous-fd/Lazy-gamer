@@ -219,38 +219,53 @@ class Browser:
                 return True
 
     def __add_game(self, game, offers=False):
+        repeat = True
         if not offers:
-            try:
-                WebDriverWait(self.__driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH,
-                                                """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button"""))
-                )
-            except TimeoutException:
-                pass
-            finally:
+            while repeat:
+                repeat = False
                 try:
-                    self.__driver.find_element_by_xpath(
-                        """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button""").click()
-                except NoSuchElementException:
-                    self.__driver.find_element_by_xpath(
-                        """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[2]/div/div/button""").click()
-        else:
-            try:
-                WebDriverWait(self.__driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH,
-                                                """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button"""))
-                )
-            finally:
-                try:
-                    self.__driver.find_element_by_xpath(
-                        """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button""").click()
-                finally:
+                    WebDriverWait(self.__driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH,
+                                                    """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button"""))
+                    )
+                except TimeoutException:
                     pass
+                finally:
+                    try:
+                        self.__driver.find_element_by_xpath(
+                            """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[3]/div/div/button""").click()
+                    except NoSuchElementException:
+                        self.__driver.find_element_by_xpath(
+                            """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/div/div[2]/div/div/button""").click()
+
+                if self.license():
+                    repeat = True
+        else:
+            while repeat:
+                repeat = False
+                try:
+                    WebDriverWait(self.__driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH,
+                                                    """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button"""))
+                    )
+                except TimeoutException:
+                    pass
+                finally:
+                    try:
+                        self.__driver.find_element_by_xpath(
+                            """//*[@id="dieselReactWrapper"]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button""").click()
+                    finally:
+                        pass
+
+                if self.license():
+                    repeat = True
         try:
             WebDriverWait(self.__driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH,
                                             """//*[@id="purchase-app"]/div/div[4]/div[1]/div[2]/div[5]/div/div/button"""))
             )
+        except TimeoutException:
+            pass
         finally:
             self.__driver.find_element_by_xpath(
                 """//*[@id="purchase-app"]/div/div[4]/div[1]/div[2]/div[5]/div/div/button""").click()
@@ -272,6 +287,26 @@ class Browser:
             print("Скоро появится")
         else:
             pass
+
+    def license(self):
+        try:
+            WebDriverWait(self.__driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "input.css-1614hfe-Checkbox__checkbox"))
+            )
+        except TimeoutException or NoSuchElementException:
+            pass
+        finally:
+            try:
+                self.__driver.find_element_by_css_selector("input.css-1614hfe-Checkbox__checkbox").click()
+                self.__driver.find_element_by_css_selector("button.css-1b2j8lx").click()
+                print("pass license")
+                return True
+            except NoSuchElementException:
+                pass
+            finally:
+                pass
+
+        return False
 
     def get_free_game(self, game, url):
         self.__driver.get(url)
