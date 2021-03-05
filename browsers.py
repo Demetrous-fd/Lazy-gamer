@@ -200,8 +200,8 @@ class Browser:
     def check_login(self):
         self.__driver.get(EGS)
         self.__driver.implicitly_wait(15)
-        if self.__driver.current_url == "https://www.epicgames.com/id/logout?lang=ru&redirectUrl=https%3A%2F%2Fwww.epicgames.com" \
-                or self.__driver.current_url == "https://www.epicgames.com/id/login?lang=ru&noHostRedirect=true&redirectUrl=https%3A%2F%2Fwww.epicgames.com%2Fstore%2F&client_id=875a3b57d3a640a6b7f9b4e883463ab4":
+        if "https://www.epicgames.com/id/logout" in self.__driver.current_url \
+                or "https://www.epicgames.com/id/login" in self.__driver.current_url:
             update_setting("Settings", "auth", "False")
             return False
         try:
@@ -210,12 +210,13 @@ class Browser:
             )
         finally:
             sleep(5)
-            if self.__driver.find_element_by_xpath("""//*[@id="user"]/ul/li/a/span""").text.lower() == "вход":
-                self.__driver.quit()
-                update_setting("Settings", "auth", "False")
-                sleep(3)
-                return False
-            else:
+            try:
+                if self.__driver.find_element_by_xpath("""//*[@id="user"]/ul/li/a/span""").text.lower() == "вход":
+                    self.__driver.quit()
+                    update_setting("Settings", "auth", "False")
+                    sleep(3)
+                    return False
+            finally:
                 return True
 
     def __add_game(self, game, offers=False):

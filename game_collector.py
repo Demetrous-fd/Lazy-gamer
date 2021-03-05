@@ -5,10 +5,18 @@ from time import sleep
 from scrapy import get_info
 from browsers import Browser
 from os.path import exists, getsize
-from settings import update_setting, path
+from settings import update_setting, path, is_frozen, raise_console
 
 PATH = path()
 driver = Browser()
+
+
+def silent_start():
+    if is_frozen():
+        raise_console(False)
+    sleep(30)
+    launch_bot()
+    sys.exit()
 
 
 def check_games(games):
@@ -69,8 +77,27 @@ def stop_browser_handler(signum, frame):
         sys.exit()
 
 
+def test():
+    driver.launch_browser("https://www.epicgames.com/store/ru/", True, True)
+    sleep(30)
+    driver.quit()
+
+
 def launch_bot():
     print("\n" * 50)
     update_setting("Other", "last_launch", datetime.datetime.today().strftime("%d.%m_%H:%M"))
     get_info()
     send_to_check()
+
+
+def stop_browser_handler(signum, frame):
+    print("Отправлен сигнал на завершение работы!")
+    print("Через пару секунд программа закроется.")
+    try:
+        driver.quit()
+    finally:
+        sys.exit()
+
+
+if __name__ == '__main__':
+    test()

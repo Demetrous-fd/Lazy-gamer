@@ -1,9 +1,10 @@
+from scrapy import path, is_frozen, get_path_pythonw
+from os.path import exists
+from os import mkdir
 import configparser
 import subprocess
 import winreg
-from os import mkdir
-from scrapy import path, is_frozen, get_path_pythonw
-from os.path import exists
+import ctypes
 
 
 PATH = path() + "\\data\\settings.ini"
@@ -112,6 +113,16 @@ def disable_startup():
                      stderr=subprocess.PIPE)
     subprocess.Popen(['schtasks.exe', '/delete', '/TN', "LazyGamerPy", "/F"], stdout=subprocess.PIPE,
                      stderr=subprocess.PIPE)
+
+
+def raise_console(console_toggle):
+    """Brings up the Console Window."""
+    if console_toggle:
+        # Show console
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 4)
+    else:
+        # Hide console
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
 
 if __name__ == "__main__":
