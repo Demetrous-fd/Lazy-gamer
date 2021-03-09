@@ -8,11 +8,13 @@
 
 ### Прохождение авторизации и запуск бота
 1. Выбираем первый пункт в меню "Пройти авторизацию" (*При первом запуске откроется окно брандмауэра, дайте разрешение*)
-![menu1](https://github.com/Demetrous-fd/Lazy-gamer/tree/master/resurs/1.png)
+<img src="resurs/1.png"/>
+
 2. После запуска через пару секунд откроется окно браузера с окном авторизации
-![auth](https://github.com/Demetrous-fd/Lazy-gamer/tree/master/resurs/2.png)
+<img src="resurs/2.png"/>
+
 3. После завершения авторизации можно запускать бота
-![menu2](https://github.com/Demetrous-fd/Lazy-gamer/tree/master/resurs/3.png)
+<img src="resurs/3.png"/>
 
 ### Аргумент запуска
 `--silent`  запускает бота в фоне
