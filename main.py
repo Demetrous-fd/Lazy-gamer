@@ -6,7 +6,6 @@ from console import console_menu
 from game_collector import silent_start, stop_browser_handler
 
 
-
 @click.command()
 @click.option("--silent", is_flag=True, help="Launch bot in background")
 def main(silent):

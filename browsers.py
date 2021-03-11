@@ -1,10 +1,9 @@
 import re
-import json
 import webbrowser
+from os import popen
 from time import sleep
-from os import getenv, popen
+from os.path import exists
 from config import AUTH_URL, EGS
-from os.path import exists, getsize
 from fake_useragent import UserAgent
 from custom.selenium_mod import webdriver
 from scrapy import get_remote_link, path
@@ -22,16 +21,8 @@ PATH = path()
 
 
 def write_game(game):
-    games = [{"game": game}]
-    if exists(r"data\left game.json") and getsize(r"data\left game.json") > 0:
-        with open(PATH + r"\data\left game.json") as file:
-            temp = json.load(file)
-
-        for game in temp:
-            games.append({"game": game["game"]})
-
-    with open(PATH + r"\data\left game.json", "w") as file:
-        json.dump(games, file, indent=4)
+    with open(PATH + r"\data\left game.txt", "a") as file:
+        file.write(game + "\n")
 
 
 def select_browser(name, headless=False, remote=False):

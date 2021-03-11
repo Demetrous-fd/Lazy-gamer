@@ -4,6 +4,7 @@ import datetime
 from time import sleep
 from scrapy import get_info
 from browsers import Browser
+from itertools import groupby
 from os.path import exists, getsize
 from settings import update_setting, path, is_frozen, raise_console
 
@@ -20,16 +21,17 @@ def silent_start():
 
 
 def check_games(games):
-    temp = []
     result = []
-    data = json.load(open(PATH + r"\data\left game.json"))
-    for src in data:
-        temp.append(src["game"])
-    for game in games:
-        if game["game"] in temp:
+    if not exists(PATH + r"\data\left game.txt"):
+        with open(PATH + r"\data\left game.txt", "w"):
             pass
-        else:
+    with open(PATH + r"\data\left game.txt") as file:
+        data = list(map(lambda x: x.replace("\n", ""), file.readlines()))
+
+    for game in games:
+        if not game["game"] in data:
             result.append(game)
+
     return result
 
 
@@ -41,8 +43,9 @@ def send_to_check():
     for game in src:
         if game["game"] != "Mystery Game":
             games.append({"game": game["game"], "link": game["link"]})
+        games = [el for el, _ in groupby(games)]
 
-    if exists(PATH + r"\data\left game.json") and getsize(PATH + r"\data\left game.json") > 0:
+    if exists(PATH + r"\data\left game.txt") and getsize(PATH + r"\data\left game.txt") > 0:
         games = check_games(games)
 
     if len(games) > 0:
@@ -61,7 +64,7 @@ def get_game(games):
                     driver.get_free_game(game["game"], game["link"])
                     print("-" * 50)
     except Exception as ex:
-        driver.get_screenshot("Crash" + datetime.datetime.today().strftime("%m-%d_%H-%M-%S"))
+        #driver.get_screenshot("Crash" + datetime.datetime.today().strftime("%m-%d_%H-%M-%S"))
         print(ex)
     finally:
         sleep(3)
