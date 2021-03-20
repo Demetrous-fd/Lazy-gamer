@@ -7,7 +7,7 @@ import re
 def input_int():
     while True:
         try:
-            return int(input("Ввод: "))
+            return int(input(">>> "))
         except ValueError:
             print("Введите число!\n")
 
@@ -183,7 +183,7 @@ def set_browser():
         print("\n" * 50)
         settings()
 
-    game_collector.driver.update_browser()
+    game_collector.update_browser()
 
     set_browser()
 
@@ -262,12 +262,11 @@ def draw_menu():
             print("1) Сейчас откроется окно браузера с формой авторизации в EpicGames Store")
             print("   Если окно браузера не открылось, перейдите по ссылке которая будет указана ниже.")
             print("2) Если на форме с авторизацией белый экран, перезагрузите страницу")
-            print("3) Не закрывайте программу через крестик, используйте сочетание клавиш CTRL+C")
-            print("4) При первом запуске откроется окно брандмауэра, для корректной работы бота дайте разрешение")
+            print("3) При первом запуске откроется окно брандмауэра, для корректной работы бота дайте разрешение")
             print("-" * 100)
             input("Нажмите ENTER: ")
             print("-" * 100)
-            game_collector.driver.login()
+            game_collector.auth()
         elif choise == 2:
             print("\n" * 50)
             settings()

@@ -3,13 +3,12 @@ import json
 import datetime
 from time import sleep
 from scrapy import get_info
-from browsers import Browser
+from browsers import BrowserForWith, Browser
 from itertools import groupby
 from os.path import exists, getsize
 from settings import update_setting, path, is_frozen, raise_console
 
 PATH = path()
-driver = Browser()
 
 
 def silent_start():
@@ -26,7 +25,7 @@ def check_games(games):
         with open(PATH + r"\data\left game.txt", "w"):
             pass
     with open(PATH + r"\data\left game.txt") as file:
-        data = list(map(lambda x: x.replace("\n", ""), file.readlines()))
+        data = file.read().splitlines()
 
     for game in games:
         if not game["game"] in data:
@@ -54,36 +53,36 @@ def send_to_check():
 
 def get_game(games):
     try:
-        driver.launch_browser(headless=True)
-        if driver.check_login():
-            print("\n" * 2)
-            print("-" * 50)
+        with BrowserForWith() as driver:
+            driver.launch_browser(headless=True)
+            if driver.check_login():
+                print("\n" * 2)
+                print("-" * 50)
 
-            for game in games:
-                if game["game"] != "Mystery Game":
-                    driver.get_free_game(game["game"], game["link"])
-                    print("-" * 50)
+                for game in games:
+                    if game["game"] != "Mystery Game":
+                        driver.get_free_game(game["game"], game["link"])
+                        print("-" * 50)
     except Exception as ex:
         #driver.get_screenshot("Crash" + datetime.datetime.today().strftime("%m-%d_%H-%M-%S"))
         print(ex)
-    finally:
-        sleep(3)
-        driver.quit()
 
 
-def stop_browser_handler(signum, frame):
-    print("Отправлен сигнал на завершение работы!")
-    print("Через пару секунд программа закроется.")
-    try:
-        driver.quit()
-    finally:
-        sys.exit()
+def auth():
+    with BrowserForWith() as driver:
+        driver.login()
+
+
+def update_browser():
+    Browser().update_browser()
 
 
 def test():
-    driver.launch_browser("https://www.epicgames.com/store/ru/", True, True)
-    sleep(30)
-    driver.quit()
+    with BrowserForWith() as driver:
+        driver.launch_browser("https://www.epicgames.com/store/ru/", True, True)
+        # driver.launch_browser("https://www.epicgames.com/store/ru/p/crysis-remastared", True, True)
+        # driver.get_free_game("test", "https://www.epicgames.com/store/ru/p/metro-2033-redux")
+        sleep(30)
 
 
 def launch_bot():
@@ -91,15 +90,6 @@ def launch_bot():
     update_setting("Other", "last_launch", datetime.datetime.today().strftime("%d.%m_%H:%M"))
     get_info()
     send_to_check()
-
-
-def stop_browser_handler(signum, frame):
-    print("Отправлен сигнал на завершение работы!")
-    print("Через пару секунд программа закроется.")
-    try:
-        driver.quit()
-    finally:
-        sys.exit()
 
 
 if __name__ == '__main__':

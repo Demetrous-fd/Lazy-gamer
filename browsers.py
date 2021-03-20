@@ -1,12 +1,10 @@
-import re
 import webbrowser
-from os import popen
 from time import sleep
 from os.path import exists
 from config import AUTH_URL, EGS
 from fake_useragent import UserAgent
-from custom.selenium_mod import webdriver
 from scrapy import get_remote_link, path
+from custom.selenium_mod import webdriver
 from settings import update_setting, get_setting
 from custom.msedge_mod.selenium_tools import Edge
 from custom.selenium_mod.webdriver.common.by import By
@@ -26,7 +24,7 @@ def write_game(game):
 
 
 def select_browser(name, headless=False, remote=False):
-    useragent = UserAgent()
+    user_agent = UserAgent()
     chrome_driver = None
     edge_driver = None
     browser = get_setting("Settings", "browser")
@@ -54,92 +52,75 @@ def select_browser(name, headless=False, remote=False):
                 edge_driver = EdgeChromiumDriverManager().install()
 
     if name == "chrome":
-        chromeoptions = webdriver.ChromeOptions()
-        chromeoptions.add_experimental_option('excludeSwitches', ['enable-logging'])
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-        chromeoptions.add_argument("--window-size=1920,1080")
-        chromeoptions.add_argument("start-maximized")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("start-maximized")
 
         # Включение кастомного пути папки с профилем
-        chromeoptions.add_argument("--enable-profile-shortcut-manager")
-        chromeoptions.add_argument("--allow-profiles-outside-user-dir")
-        # chromeoptions.add_argument(
-        #     "user-data-dir=" + "\\".join(
-        #         getenv("appdata").split("\\")[0:-1]) + r"\Local\Google\Chrome\User Data\Profile 2")
+        chrome_options.add_argument("--enable-profile-shortcut-manager")
+        chrome_options.add_argument("--allow-profiles-outside-user-dir")
         data_path = path() + '\\data\\Users\\chrome\\Profile 1'
-        chromeoptions.add_argument(
+        chrome_options.add_argument(
             f"user-data-dir={data_path}")
-        chromeoptions.add_argument('--profile-directory="Default"')
-        chromeoptions.add_argument("--enable-aggressive-domstorage-flushing")
-        chromeoptions.add_argument("--profiling-flush=10")
+        chrome_options.add_argument('--profile-directory="Default"')
+        chrome_options.add_argument("--enable-aggressive-domstorage-flushing")
+        chrome_options.add_argument("--profiling-flush=10")
 
         # Установка реального useragent-а
-        chromeoptions.add_argument(f"user-agent={useragent.chrome}")
+        chrome_options.add_argument(f"user-agent={user_agent.chrome}")
 
         # Отключение детекта webdriver-а
-        pattern = r'\d+\.\d+\.\d+\.\d+'
-        chrome_version = r'reg query "HKEY_CURRENT_USER\Software\Google\Chrome\BLBeacon" /v version'
-
-        stdout = popen(chrome_version).read()
-        version = re.search(pattern, stdout).group(0).split(".")
-
-        if int(version[0]) <= 79:
-            if int(version[2]) <= 3945 and int(version[3]) <= 16:
-                chromeoptions.add_experimental_option("excludeSwitches", ["enable-automation"])
-                chromeoptions.add_experimental_option("useAutomationExtension", False)
-        else:
-            chromeoptions.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
         if remote:
-            chromeoptions.add_argument("--remote-debugging-port=9222")
+            chrome_options.add_argument("--remote-debugging-port=9222")
 
         if headless:
-            chromeoptions.add_argument("headless")
-            chromeoptions.add_argument("--disable-gpu")
-            return webdriver.Chrome(chrome_driver,
-                                    chrome_options=chromeoptions)
-        else:
-            return webdriver.Chrome(chrome_driver,
-                                    chrome_options=chromeoptions)
+            chrome_options.add_argument("headless")
+            chrome_options.add_argument("--disable-gpu")
+
+        return webdriver.Chrome(chrome_driver, chrome_options=chrome_options)
 
     elif name == "edge":
-        options = EdgeOptions()
-        options.use_chromium = True
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("start-maximized")
+        edge_options = EdgeOptions()
+        edge_options.use_chromium = True
+        edge_options.add_argument("--window-size=1920,1080")
+        edge_options.add_argument("start-maximized")
 
         # Включение кастомного пути папки с профилем
-        options.add_argument("--enable-profile-shortcut-manager")
-        options.add_argument("--allow-profiles-outside-user-dir")
-        # options.add_argument("user-data-dir=" + "\\".join(
-        #     getenv("appdata").split("\\")[0:-1]) + r"\Local\Microsoft\Edge\User Data\Profile 2")
+        edge_options.add_argument("--enable-profile-shortcut-manager")
+        edge_options.add_argument("--allow-profiles-outside-user-dir")
         data_path = path() + '\\data\\Users\\edge\\Profile 1'
-        options.add_argument(
+        edge_options.add_argument(
             f"user-data-dir={data_path}")
-        options.add_argument("--profile-directory=Default")
-        options.add_argument("--enable-aggressive-domstorage-flushing")
-        options.add_argument("--profiling-flush=10")
+        edge_options.add_argument("--profile-directory=Default")
+        edge_options.add_argument("--enable-aggressive-domstorage-flushing")
+        edge_options.add_argument("--profiling-flush=10")
 
         # Установка реального useragent-а
-        options.add_argument(f"user-agent={useragent.edge}")
+        edge_options.add_argument(f"user-agent={user_agent.edge}")
 
         # Отключение детекта webdriver-а
-        options.add_argument("--disable-blink-features=AutomationControlled")
+        edge_options.add_argument("--disable-blink-features=AutomationControlled")
 
         if remote:
-            options.add_argument("--remote-debugging-port=9222")
+            edge_options.add_argument("--remote-debugging-port=9222")
 
         if headless:
-            options.add_argument("headless")
-            return Edge(edge_driver, options=options)
-        else:
-            return Edge(edge_driver, options=options)
+            edge_options.add_argument("headless")
+
+        return Edge(edge_driver, options=edge_options)
 
 
 class Browser:
 
     def __init__(self, name_browser=get_setting("Settings", "browser")):
         self.__browser = name_browser  # Chrome or MS Edge
+
+    def get_driver(self):
+        return self.__driver
 
     def launch_browser(self, url="https://www.epicgames.com", headless=False, remote=False):
         """
@@ -277,6 +258,8 @@ class Browser:
                 self.__add_game(game, offers=True)
         elif button_text == "скоро появится":
             print("Скоро появится")
+        elif "404" in button_text:
+            print("ERROR PAGE")
         else:
             pass
 
@@ -313,9 +296,16 @@ class Browser:
             pass
         finally:
             try:
-                if self.__driver.find_element_by_css_selector("div.css-a8mpwg-WarningLayout__contentWrapper"):
-                    print("18+")
-                    self.__driver.find_element_by_css_selector("button.css-19tmzba").click()
+                element = self.__driver.find_element_by_css_selector("div.css-a8mpwg-WarningLayout__contentWrapper")
+                if element:
+                    if "404" in element.text:
+                        self.__choices(game, element.text)
+                    else:
+                        print("18+")
+                        try:
+                            self.__driver.find_element_by_xpath(r"/html/body/div[5]/div/div/div/div/div/div/button").click()
+                        except NoSuchElementException:
+                            self.__driver.find_element_by_xpath(r"/html/body/div[6]/div/div/div/div/div/div/button").click()
             except NoSuchElementException:
                 print("Not 18+")
         try:
@@ -355,3 +345,14 @@ class Browser:
     def quit(self):
         self.__driver.quit()
         print("Close browser")
+
+
+class BrowserForWith:
+    def __init__(self):
+        self.__driver = Browser()
+
+    def __enter__(self):
+        return self.__driver
+
+    def __exit__(self, type, value, traceback):
+        self.__driver.quit()

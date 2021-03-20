@@ -2,3 +2,4 @@ requests==2.25.0
 fake_useragent==0.1.11
 webdriver-manager==3.3.0
 click==7.1.2
+pywin32==300
