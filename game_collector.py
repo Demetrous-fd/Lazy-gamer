@@ -1,11 +1,12 @@
 import sys
 import json
 import datetime
-from time import sleep
+import traceback
+from time import sleep, time
 from scrapy import get_info
-from browsers import BrowserForWith, Browser
 from itertools import groupby
 from os.path import exists, getsize
+from browsers import BrowserForWith, Browser
 from settings import update_setting, path, is_frozen, raise_console
 
 PATH = path()
@@ -41,7 +42,13 @@ def send_to_check():
 
     for game in src:
         if game["game"] != "Mystery Game":
-            games.append({"game": game["game"], "link": game["link"]})
+            games.append(
+                {
+                    "game": game["game"],
+                    "link": game["link"],
+                    "productSlug": game["productSlug"]
+                }
+            )
         games = [el for el, _ in groupby(games)]
 
     if exists(PATH + r"\data\left game.txt") and getsize(PATH + r"\data\left game.txt") > 0:
@@ -61,11 +68,12 @@ def get_game(games):
 
                 for game in games:
                     if game["game"] != "Mystery Game":
-                        driver.get_free_game(game["game"], game["link"])
+                        driver.get_free_game(game["game"], game["link"], game["productSlug"])
                         print("-" * 50)
-    except Exception as ex:
-        #driver.get_screenshot("Crash" + datetime.datetime.today().strftime("%m-%d_%H-%M-%S"))
-        print(ex)
+
+    except Exception:
+        # driver.get_screenshot("Crash" + datetime.datetime.today().strftime("%m-%d_%H-%M-%S"))
+        print(traceback.format_exc())
 
 
 def auth():

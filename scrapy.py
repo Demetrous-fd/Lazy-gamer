@@ -6,6 +6,7 @@ import winreg
 import requests
 from time import sleep
 from config import PROMO_URL
+from functools import lru_cache
 from fake_useragent import UserAgent
 from os.path import abspath, dirname
 from inspect import getframeinfo, currentframe
@@ -33,7 +34,7 @@ def get_info():
             temp_list.append({
                 "game": item["title"],
                 "link": "https://www.epicgames.com/store/ru/product/" + item["productSlug"],
-                "images": item["keyImages"],
+                "productSlug": item["productSlug"],
                 "promo": item["promotions"]
             })
 
@@ -42,6 +43,26 @@ def get_info():
     else:
         print("EGS недоступен")
         print("Статус" + str(response.status_code))
+
+
+@lru_cache(3)
+def response_egs_api(product_slug: str):
+    if "/" in product_slug:
+        product_slug = product_slug.split("/")[0]
+    return requests.get(f"https://store-content.ak.epicgames.com/api/ru/content/products/{product_slug}").json()
+
+
+def get_age_gate(product_slug: str):
+    r = response_egs_api(product_slug)
+    return r["pages"][0]["ageGate"]["hasAgeGate"]
+
+
+def list_offers(product_slug: str):
+    r = response_egs_api(product_slug)
+    if len(r["pages"]) > 1:
+        return True
+    else:
+        return False
 
 
 def get_remote_link(browser):

@@ -34,7 +34,7 @@ def create_config():
     config.add_section("Other")
     config.set("Other", "last_launch", "")
 
-    with open(PATH, "w") as config_file:
+    with open(PATH, "w", encoding="utf8") as config_file:
         config.write(config_file)
 
 
@@ -43,7 +43,7 @@ def get_config():
         create_config()
 
     config = configparser.ConfigParser()
-    config.read(PATH)
+    config.read(PATH, encoding="utf8")
     return config
 
 
@@ -56,7 +56,7 @@ def get_setting(section, setting):
 def update_setting(section, setting, value):
     config = get_config()
     config.set(section, setting, value)
-    with open(PATH, "w") as config_file:
+    with open(PATH, "w", encoding="utf8") as config_file:
         config.write(config_file)
 
 

@@ -1,9 +1,9 @@
 import webbrowser
 from time import sleep
+from pathlib import Path
 from os.path import exists
 from config import AUTH_URL, EGS
 from fake_useragent import UserAgent
-from scrapy import get_remote_link, path
 from custom.selenium_mod import webdriver
 from settings import update_setting, get_setting
 from custom.msedge_mod.selenium_tools import Edge
@@ -12,6 +12,7 @@ from custom.msedge_mod.selenium_tools import EdgeOptions
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from custom.selenium_mod.webdriver.support.ui import WebDriverWait
+from scrapy import get_remote_link, path, get_age_gate, list_offers
 from custom.selenium_mod.webdriver.support import expected_conditions as EC
 from custom.selenium_mod.common.exceptions import TimeoutException, NoSuchElementException
 
@@ -47,7 +48,7 @@ def select_browser(name, headless=False, remote=False):
             if get_setting("WebDriver", "msedge_driver_path") != "NULL":
                 edge_path = get_setting("WebDriver", "msedge_driver_path")
                 if exists(edge_path):
-                    edge_driver = edge_path
+                    edge_driver = Path(edge_path)
             else:
                 edge_driver = EdgeChromiumDriverManager().install()
 
@@ -81,7 +82,7 @@ def select_browser(name, headless=False, remote=False):
             chrome_options.add_argument("headless")
             chrome_options.add_argument("--disable-gpu")
 
-        return webdriver.Chrome(chrome_driver, chrome_options=chrome_options)
+        return webdriver.Chrome(executable_path=chrome_driver, chrome_options=chrome_options)
 
     elif name == "edge":
         edge_options = EdgeOptions()
@@ -111,7 +112,7 @@ def select_browser(name, headless=False, remote=False):
         if headless:
             edge_options.add_argument("headless")
 
-        return Edge(edge_driver, options=edge_options)
+        return Edge(executable_path=edge_driver, options=edge_options)
 
 
 class Browser:
@@ -172,18 +173,15 @@ class Browser:
     def check_login(self):
         self.__driver.get(EGS)
         self.__driver.implicitly_wait(15)
-        if "https://www.epicgames.com/id/logout" in self.__driver.current_url \
-                or "https://www.epicgames.com/id/login" in self.__driver.current_url:
-            update_setting("Settings", "auth", "False")
-            return False
         try:
-            WebDriverWait(self.__driver, 60).until(
+            WebDriverWait(self.__driver, 30).until(
                 EC.element_to_be_clickable((By.XPATH, """//*[@id="user"]"""))
             )
         finally:
             sleep(5)
             try:
                 if self.__driver.find_element_by_xpath("""//*[@id="user"]/ul/li/a/span""").text.lower() == "вход":
+                    print(0)
                     self.__driver.quit()
                     update_setting("Settings", "auth", "False")
                     sleep(3)
@@ -283,56 +281,69 @@ class Browser:
 
         return False
 
-    def get_free_game(self, game, url):
+    def get_free_game(self, game, url, product_slug):
         self.__driver.get(url)
         self.__driver.implicitly_wait(10)
+        age_gate = get_age_gate(product_slug)
+        offers = list_offers(product_slug)
         print(self.__driver.current_url)
-
-        try:
-            WebDriverWait(self.__driver, 20).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-a8mpwg-WarningLayout__contentWrapper"))
-            )
-        except TimeoutException or NoSuchElementException:
-            pass
-        finally:
+        if age_gate:
             try:
-                element = self.__driver.find_element_by_css_selector("div.css-a8mpwg-WarningLayout__contentWrapper")
-                if element:
-                    if "404" in element.text:
-                        self.__choices(game, element.text)
-                    else:
-                        print("18+")
-                        try:
-                            self.__driver.find_element_by_xpath(r"/html/body/div[5]/div/div/div/div/div/div/button").click()
-                        except NoSuchElementException:
-                            self.__driver.find_element_by_xpath(r"/html/body/div[6]/div/div/div/div/div/div/button").click()
-            except NoSuchElementException:
-                print("Not 18+")
-        try:
-            WebDriverWait(self.__driver, 30).until(
-                EC.element_to_be_clickable((By.XPATH,
-                                            "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"))
-            )
-        except TimeoutException:
-            pass
-        finally:
-            try:
-                if self.__driver.find_element_by_xpath(
-                        "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"):  # Дополнительные предложения
-                    button_text = self.__driver.find_element_by_xpath(
-                        "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button").text.lower()
-                    self.__choices(game, button_text, offers=True)
-
-            except NoSuchElementException:  # Нет дополнительных предложений
+                WebDriverWait(self.__driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-a8mpwg-WarningLayout__contentWrapper"))
+                )
+            except TimeoutException or NoSuchElementException:
+                pass
+            finally:
                 try:
-                    WebDriverWait(self.__driver, 30).until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-1tv9h97"))
-                    )
-                except TimeoutException:
-                    pass
-                finally:
-                    button_text = self.__driver.find_element_by_css_selector("div.css-1tv9h97").text.lower()
-                    self.__choices(game, button_text)
+                    element = self.__driver.find_element_by_css_selector("div.css-a8mpwg-WarningLayout__contentWrapper")
+                    if element:
+                        if "404" in element.text:
+                            self.__choices(game, element.text)
+                        else:
+                            print("18+")
+                            try:
+                                self.__driver.find_element_by_xpath(r"/html/body/div[5]/div/div/div/div/div/div/button").click()
+                            except NoSuchElementException:
+                                self.__driver.find_element_by_xpath(r"/html/body/div[6]/div/div/div/div/div/div/button").click()
+                except NoSuchElementException:
+                    print("Not 18+")
+        if offers:  # Дополнительные предложения
+            try:
+                WebDriverWait(self.__driver, 30).until(
+                    EC.element_to_be_clickable((By.XPATH,
+                                                "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"))
+                )
+            except TimeoutException:
+                pass
+            finally:
+                try:
+                    if self.__driver.find_element_by_xpath(
+                            "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[2]/div[2]/div/div/div[3]/div/div/a"):
+                        button_text = self.__driver.find_element_by_xpath(
+                            "/html/body/div[1]/div/div[4]/main/div/div[3]/div[2]/div/div[3]/div[2]/div[2]/div[2]/div[2]/div[2]/div/div[2]/div/div/button").text.lower()
+                        self.__choices(game, button_text, offers=True)
+
+                except NoSuchElementException:  # Нет дополнительных предложений
+                    try:
+                        WebDriverWait(self.__driver, 30).until(
+                            EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-1tv9h97"))
+                        )
+                    except TimeoutException:
+                        pass
+                    finally:
+                        button_text = self.__driver.find_element_by_css_selector("div.css-1tv9h97").text.lower()
+                        self.__choices(game, button_text)
+        else:  # Нет дополнительных предложений
+            try:
+                WebDriverWait(self.__driver, 30).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "div.css-1tv9h97"))
+                )
+            except TimeoutException:
+                pass
+            finally:
+                button_text = self.__driver.find_element_by_css_selector("div.css-1tv9h97").text.lower()
+                self.__choices(game, button_text)
 
     def get_screenshot(self, name):
         if name.split(".")[-1] != "png" or "." not in name:
