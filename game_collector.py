@@ -2,7 +2,7 @@ import sys
 import json
 import datetime
 import traceback
-from time import sleep, time
+from time import sleep
 from scrapy import get_info
 from itertools import groupby
 from os.path import exists, getsize

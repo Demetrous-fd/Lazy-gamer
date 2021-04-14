@@ -9,9 +9,8 @@ from settings import update_setting, get_setting
 from custom.msedge_mod.selenium_tools import Edge
 from custom.selenium_mod.webdriver.common.by import By
 from custom.msedge_mod.selenium_tools import EdgeOptions
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from custom.selenium_mod.webdriver.support.ui import WebDriverWait
+from manager import ChromeDriverManager, EdgeChromiumDriverManager
 from scrapy import get_remote_link, path, get_age_gate, list_offers
 from custom.selenium_mod.webdriver.support import expected_conditions as EC
 from custom.selenium_mod.common.exceptions import TimeoutException, NoSuchElementException
@@ -29,7 +28,9 @@ def select_browser(name, headless=False, remote=False):
     chrome_driver = None
     edge_driver = None
     browser = get_setting("Settings", "browser")
-    if get_setting("WebDriver", "driver_manager") == "True":
+    if not name:
+        name = browser
+    if get_setting("WebDriver", "driver_manager", True):
         if browser == "chrome":
             chrome_driver = ChromeDriverManager().install()
         else:
@@ -117,7 +118,7 @@ def select_browser(name, headless=False, remote=False):
 
 class Browser:
 
-    def __init__(self, name_browser=get_setting("Settings", "browser")):
+    def __init__(self, name_browser=""):
         self.__browser = name_browser  # Chrome or MS Edge
 
     def get_driver(self):
@@ -136,8 +137,11 @@ class Browser:
         """
 
         print("-" * 50)
-        print("Launch browser")
+        print("Launch browser".center(50))
         print("-" * 50)
+        self.update_browser()
+        if self.__browser == "NULL":
+            raise Exception("Install Google Chrome or MS Edge")
         if headless and remote:
             self.__driver = select_browser(self.__browser, True, True)
             print("\n\n" + "-" * 50)

@@ -1,13 +1,20 @@
 from scrapy import path, is_frozen, get_path_pythonw
+from manager import browser_exists
 from os.path import exists
 from os import mkdir
 import configparser
 import subprocess
-import winreg
 import ctypes
 
-
-PATH = path() + "\\data\\settings.ini"
+PATH = path()
+PATH_TO_SETTINGS = PATH + "\\data\\settings.ini"
+OLD_OPTIONS = {
+    "StartUp": ("everyday", "sometimes")
+}
+NEW_OPTIONS = {
+    "StartUp": [["startup", "False"]],
+    "Settings": [["first_start", "False"]]
+}
 
 
 def create_config():
@@ -17,12 +24,18 @@ def create_config():
     config = configparser.ConfigParser()
 
     config.add_section("Settings")
-    config.set("Settings", "browser", "chrome")
+
+    if browser_exists("Google Chrome"):
+        config.set("Settings", "browser", "chrome")
+    elif browser_exists("Microsoft Edge"):
+        config.set("Settings", "browser", "edge")
+    else:
+        config.set("Settings", "browser", "NULL")
     config.set("Settings", "auth", "False")
+    config.set("Settings", "first_start", "True")
 
     config.add_section("StartUp")
-    config.set("StartUp", "everyday", "False")
-    config.set("StartUp", "sometimes", "False")
+    config.set("StartUp", "startup", "False")
     config.set("StartUp", "days", "NULL")
     config.set("StartUp", "time", "NULL")
 
@@ -34,81 +47,135 @@ def create_config():
     config.add_section("Other")
     config.set("Other", "last_launch", "")
 
-    with open(PATH, "w", encoding="utf8") as config_file:
+    with open(PATH_TO_SETTINGS, "w", encoding="utf8") as config_file:
         config.write(config_file)
 
 
 def get_config():
-    if not exists(PATH):
+    if not exists(PATH_TO_SETTINGS):
         create_config()
 
     config = configparser.ConfigParser()
-    config.read(PATH, encoding="utf8")
+    config.read(PATH_TO_SETTINGS, encoding="utf8")
     return config
 
 
-def get_setting(section, setting):
+def get_setting(section, setting, bool_val=False):
     config = get_config()
-    value = config.get(section, setting)
+    if bool_val:
+        value = config.getboolean(section, setting)
+    else:
+        value = config.get(section, setting)
     return value
 
 
 def update_setting(section, setting, value):
     config = get_config()
     config.set(section, setting, value)
-    with open(PATH, "w", encoding="utf8") as config_file:
+    with open(PATH_TO_SETTINGS, "w", encoding="utf8") as config_file:
         config.write(config_file)
 
 
-def enable_startup(everyday=True):
+def remove_old_options():
+    config = get_config()
+    for section in OLD_OPTIONS:
+        for option in OLD_OPTIONS[section]:
+            if config.has_option(section, option):
+                if section == "StartUp" and config.getboolean(section, option):
+                    NEW_OPTIONS["StartUp"][0][1] = "True"
+                config.remove_option(section, option)
+    with open(PATH_TO_SETTINGS, "w", encoding="utf8") as file:
+        config.write(file)
+
+
+def set_new_options():
+    config = get_config()
+    for section in NEW_OPTIONS:
+        for option in NEW_OPTIONS[section]:
+            config.set(section, option[0], option[1]) if not config.has_option(section, option[0]) else None
+    with open(PATH_TO_SETTINGS, "w", encoding="utf8") as file:
+        config.write(file)
+
+
+def enable_startup():
     path = PATH
-    if not is_frozen():
-        pythonw_path = get_path_pythonw()
-    if everyday:
-        if is_frozen():
-            path += "\\LazyGamer.exe"
-            command = f'"{path}" --silent'
-
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
-                                winreg.KEY_WRITE) as key:
-
-                winreg.SetValueEx(key, "LazyGamer", 0, winreg.REG_SZ, command)
-
-        else:
-            path += "\\main.py"
-            command = f'''"{pythonw_path}" "{path}" --silent'''
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
-                                winreg.KEY_WRITE) as key:
-                winreg.SetValueEx(key, "LazyGamerPy", 0, winreg.REG_SZ, command)
+    days = get_setting("StartUp", "days")
+    time = get_setting("StartUp", "time")
+    days_list = {
+        "MON": "<Monday />",
+        "TUE": "<Tuesday />",
+        "WED": "<Wednesday />",
+        "THU": "<Thursday />",
+        "FRI": "<Friday />",
+        "SAT": "<Saturday />",
+        "SUN": "<Sunday />"
+    }
+    xml = r'''<?xml version="1.0" encoding="UTF-16"?>
+    <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+      <RegistrationInfo>
+        <URI>\{0}</URI>
+      </RegistrationInfo>
+      <Triggers>
+        <CalendarTrigger>
+          <StartBoundary>2021-04-11T{1}:00</StartBoundary>
+          <Enabled>true</Enabled>
+          <ScheduleByWeek>
+            <DaysOfWeek>
+              {2}
+            </DaysOfWeek>
+            <WeeksInterval>1</WeeksInterval>
+          </ScheduleByWeek>
+        </CalendarTrigger>
+      </Triggers>
+      <Settings>
+        <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+        <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>
+        <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>
+        <AllowHardTerminate>true</AllowHardTerminate>
+        <StartWhenAvailable>true</StartWhenAvailable>
+        <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+        <IdleSettings>
+          <Duration>PT10M</Duration>
+          <WaitTimeout>PT1H</WaitTimeout>
+          <StopOnIdleEnd>true</StopOnIdleEnd>
+          <RestartOnIdle>false</RestartOnIdle>
+        </IdleSettings>
+        <AllowStartOnDemand>true</AllowStartOnDemand>
+        <Enabled>true</Enabled>
+        <Hidden>false</Hidden>
+        <RunOnlyIfIdle>false</RunOnlyIfIdle>
+        <WakeToRun>false</WakeToRun>
+        <ExecutionTimeLimit>PT72H</ExecutionTimeLimit>
+        <Priority>7</Priority>
+      </Settings>
+      <Actions Context="Author">
+        <Exec>
+          <Command>{3}</Command>
+          <Arguments>{4}</Arguments>
+        </Exec>
+      </Actions>
+    </Task>'''
+    if is_frozen():
+        with open(path + r"\data\startup.xml", "w") as file:
+            file.write(xml.format("LazyGamer", time, "".join(map(lambda x: days_list[x], days.split(","))),
+                                  f"{path}\\LazyGamer.exe", "--silent"))
+        subprocess.Popen(
+            ['schtasks.exe', '/create', '/TN', "LazyGamer", "/xml", fr'{PATH}\data\startup.xml'],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
-        days = get_setting("StartUp", "days")
-        time = get_setting("StartUp", "time")
-        if is_frozen():
-            path += "\\LazyGamer.exe"
-            command = fr'"{path}" --silent'
-            up = subprocess.Popen(
-                ['schtasks.exe', '/create', '/TN', "LazyGamer", "/tr", command, "/SC", "weekly", "/d", days,
-                 "/st", time], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        else:
-            path += "\\main.py"
-            command = fr'''"{pythonw_path}" "{path}" --silent'''
-            subprocess.Popen(
-                ['schtasks.exe', '/create', '/TN', "LazyGamerPy", "/tr", command, "/SC", "weekly", "/d", days,
-                 "/st", time], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pythonw_path = get_path_pythonw()
+        main_path = path + "\\main.py"
+        command = fr'''"{main_path}" --silent'''
+        with open(path + r"\data\startup.xml", "w") as file:
+            file.write(
+                xml.format("LazyGamer", time, "".join(map(lambda x: days_list[x], days.split(","))), pythonw_path,
+                           command))
+        subprocess.Popen(
+            ['schtasks.exe', '/create', '/TN', "LazyGamerPy", "/xml", fr'{PATH}\data\startup.xml'],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
 
 
 def disable_startup():
-    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
-                        winreg.KEY_WRITE) as key:
-        try:
-            if is_frozen():
-                winreg.DeleteValue(key, "LazyGamer")
-
-            else:
-                winreg.DeleteValue(key, "LazyGamerPy")
-        except FileNotFoundError:
-            pass
-
     subprocess.Popen(['schtasks.exe', '/delete', '/TN', "LazyGamer", "/F"], stdout=subprocess.PIPE,
                      stderr=subprocess.PIPE)
     subprocess.Popen(['schtasks.exe', '/delete', '/TN', "LazyGamerPy", "/F"], stdout=subprocess.PIPE,
@@ -127,3 +194,6 @@ def raise_console(console_toggle):
 
 if __name__ == "__main__":
     create_config()
+else:
+    remove_old_options()
+    set_new_options()
